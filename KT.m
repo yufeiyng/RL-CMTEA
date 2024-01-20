@@ -1,4 +1,6 @@
 function offspring = KT(Algo, Tasks, population, divK, divD)
+    % knowledge transfer based on similar dimensions.
+
     corre = [];
 
     for t = 1:length(Tasks)

@@ -1,13 +1,7 @@
 classdef RL_CMTEA < Algorithm
     % <Multi><Constrained>
+    % A reinforcement learning assisted evolutionary algorithm for constrained multi-task optimization.
     % alpha = 0.01, gamma = 0.9, F = 0.5, CR = 0.5
-
-    %------------------------------- Copyright --------------------------------
-    % Copyright (c) 2022 Yanchi Li. You are free to use the MTO-Platform for
-    % research purposes. All publications which use this platform or any code
-    % in the platform should acknowledge the use of "MTO-Platform" and cite
-    % or footnote "https://github.com/intLyc/MTO-Platform"
-    %--------------------------------------------------------------------------
 
     properties (SetAccess = private)
         GA_MuC = 2
@@ -44,7 +38,7 @@ classdef RL_CMTEA < Algorithm
             convergence_cv(:, 1) = bestCV;
             data.bestX = bestX;
 
-            % For knowledge transfer
+            % Parameter settings for knowledge transfer
             maxD = min(max(Tasks.dims));
             main_divD = randi([1, maxD]);
             aux_divD = randi([1, maxD]);
@@ -54,16 +48,15 @@ classdef RL_CMTEA < Algorithm
 
             EC_Top = 0.2; EC_Alpha = 0.8; EC_Cp = 2; EC_Tc = 0.8;
 
-            %% For QL
-            num_pop_each_task = 2;
+            %% Parameter settings for Q-learning
+            alpha_ql = 0.01; gamma_ql = 0.9;
+            num_pop_each_task = 2; num_operator = 4;
             num_pop = num_pop_each_task * length(Tasks);
-            num_operator = 4;
+
             Q_Table = zeros(num_pop, num_operator);
-            gamma_ql = 0.9;
-            alpha_ql = 0.01;
+            action_counts = zeros(num_pop, num_operator);
 
             varepsilon_ucb = 1e-6;
-            action_counts = zeros(num_pop, num_operator);
             UCB_values = zeros(num_pop, num_operator);
             UCB_T = ceil(eva_num / (4 * sub_pop));
 
@@ -86,7 +79,7 @@ classdef RL_CMTEA < Algorithm
                 main_off1 = KT(obj, Tasks, main_pop, main_divK, main_divD);
                 aux_off1 = KT(obj, Tasks, aux_pop, aux_divK, aux_divD);
 
-                % Update Epsilon
+                % Update epsilon
                 fea_percent = sum([aux_pop{t}.constraint_violation] <= 0) / length(aux_pop{t});
 
                 if fea_percent < 1
@@ -155,7 +148,7 @@ classdef RL_CMTEA < Algorithm
                     [main_pop{t}, ~, bestobj(t), bestCV(t), bestX{t}, ~] = selectMP(main_pop{t}, [main_off, aux_off], bestobj(t), bestCV(t), bestX{t}, 0);
                     [aux_pop{t}, aux_rank{t}, ~, ~, ~, aux_flag(t)] = selectMP(aux_pop{t}, aux_off, bestobj(t), bestCV(t), bestX{t}, Ep{t});
 
-                    % determine the transfer rate to update Q table
+                    % determine the transfer rate to update Q table and UCB table
                     main_next = zeros(length(main_rank{t}), 1);
                     aux_next = zeros(length(aux_rank{t}), 1);
                     main_next(main_rank{t}(1:length(main_pop{t}))) = true;
@@ -184,6 +177,7 @@ classdef RL_CMTEA < Algorithm
 
 end
 
+% Update B and K of KT
 function [divD, divK] = update_divd_divk(succ_flag, divD, divK, maxD, minK, maxK)
 
     if all(~succ_flag)
